@@ -10,6 +10,56 @@ execute:
 #| message: false
 library(tidyverse)
 library(primer.data)
+library(tidymodels)
+library(broom)
 ```
 
-Traffic stops are a common interaction between law enforcement and the public, often raising questions about fairness and equity. Using data from over 400,000 traffic stops in New Orleans, collected by the Open Policing project from 2011 to 2018, we investigate whether racial differences exist in arrest rates even when controlling for other relevant factors.
+```{r}
+#| cache: true
+x <- stops |>
+  filter(race %in% c("black", "white")) |>
+  mutate(race = str_to_title(race), 
+         sex = str_to_title(sex))
+```
+
+```{r}
+#| cache: true
+fit_stops <- linear_reg() |>
+    set_engine("lm") |>
+    fit(arrested ~ sex + race*zone, data = x)
+```
+
+```{r}
+fit_stops_logistic <- logistic_reg() |>
+  set_engine("glm") |>
+  fit(as.factor(arrested) ~ sex + race, data = x)
+
+tidy(fit_stops_logistic, conf.int = TRUE) |>
+  select(term, estimate, conf.low, conf.high) |>
+  mutate(across(where(is.numeric), ~round(., 3))) |>
+  knitr::kable(
+    caption = "Logistic Regression Estimates for Arrest Probability (Source: Traffic stops dataset filtered for Black and White drivers)"
+  )
+```
+
+<br>
+
+Racial disparities in policing outcomes remain a pressing concern, particularly when examining how factors like race and location influence the likelihood of arrest during traffic stops. Using data from over 400,000 traffic stops in New Orleans, collected by the Open Policing project from 2011 to 2018, we seek to understand the relationship between driver race and the probability of getting arrested during a traffic stop. However, a potential weakness of our model is the assumption that the definition of an "arrest" in the historical dataset perfectly aligns with how arrests are understood or recorded today. We fit a logistic regression model, predicting arrest outcomes based on driver race, gender, and the police zone of the stop, including interactions between race and zone. This model estimates the probability of arrest (a binary outcome) as a logistic function of these driver and stop characteristics.
+
+$$
+\log\left[ \frac{P(Y=1)}{1 - P(Y=1)} \right] = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_n X_n
+$$
+
+$$
+\widehat{\text{arrested}} = 0.177 
++ 0.0614 \cdot \text{sex}_{\text{Male}} 
+- 0.0445 \cdot \text{race}_{\text{White}} 
++ 0.0146 \cdot \text{zone}_{\text{B}} 
++ 0.00610 \cdot \text{zone}_{\text{C}} 
++ 0.0781 \cdot \text{zone}_{\text{D}} 
++ 0.00190 \cdot \text{zone}_{\text{E}} 
+- 0.00271 \cdot \text{zone}_{\text{F}} 
++ 0.0309 \cdot \text{zone}_{\text{G}} 
++ 0.0757 \cdot \text{zone}_{\text{H}} 
++ \text{(interaction terms for race and zone)}
+$$
