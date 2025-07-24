@@ -1,0 +1,15 @@
+---
+title: "Stops"
+author: "Paramanyu Gupta"
+format: html
+execute: 
+  echo: false
+---
+
+```{r setup}
+#| message: false
+library(tidyverse)
+library(primer.data)
+```
+
+Traffic stops are a common interaction between law enforcement and the public, often raising questions about fairness and equity. Using data from over 400,000 traffic stops in New Orleans, collected by the Open Policing project from 2011 to 2018, we investigate whether racial differences exist in arrest rates even when controlling for other relevant factors.
